@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, Keenable. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nat"]
+
+[project]
+name = "nemo-agent-toolkit-keenable"
+version = "0.1.0"
+requires-python = ">=3.11,<3.14"
+description = "Keenable web search integration for NVIDIA NeMo Agent Toolkit (keyless by default)"
+readme = "README.md"
+keywords = ["ai", "agents", "web search", "keenable", "nemo-agent-toolkit", "nvidia-nat"]
+license = { text = "Apache-2.0" }
+authors = [{ name = "Keenable", email = "hello@keenable.ai" }]
+maintainers = [{ name = "Keenable" }]
+classifiers = [
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+dependencies = [
+  "nvidia-nat-core >= 1.8",
+  "httpx >= 0.27",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest >= 8.0",
+  "pytest-asyncio >= 0.24",
+  "nvidia-nat-test >= 1.8",
+]
+
+[project.urls]
+documentation = "https://docs.nvidia.com/nemo/agent-toolkit/latest/"
+homepage = "https://keenable.ai"
+source = "https://github.com/keenableai/NeMo-Agent-Toolkit-keenable"
+
+[project.entry-points.'nat.plugins']
+nat_keenable = "nat.plugins.keenable.register"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
