@@ -87,7 +87,7 @@ MAX_OBJECTIVE_CHARS = 1000
 def clean_objective(objective: str | None) -> str | None:
     """Trim ``objective``; blank means not sent; over 1,000 characters is rejected.
 
-    The ranker scores "{query} (task: {objective})"; retrieval reads only the query.
+    Ranking uses query and objective together; retrieval reads only the query.
     """
     cleaned = (objective or "").strip()
     if len(cleaned) > MAX_OBJECTIVE_CHARS:
