@@ -38,6 +38,21 @@ class KeenableSearchInput(BaseModel):
     acquired_before: str | None = Field(
         default=None, description="Only pages indexed on or before this date (YYYY-MM-DD)."
     )
+    objective: str | None = Field(
+        default=None,
+        description=(
+            "Optional. Two or three natural sentences, with no field labels and no "
+            "line breaks, that cover: the exact facts, entities, numbers, dates or "
+            "names a useful page must contain; task context the query does not state "
+            "(who, where, when, eligibility, date window); which kinds of sources "
+            "count or must be excluded; what is already established from earlier "
+            "steps; and what is still unknown. Every sentence must be self-contained:"
+            " name the entities, places, dates and figures explicitly, and never "
+            "refer to 'the task', 'the clue', 'the question', 'above' or earlier "
+            "results. Do not paste the conversation, and do not include personal, "
+            "confidential or sensitive information. At most 1,000 characters."
+        ),
+    )
     max_results: int | None = Field(
         default=None, ge=1, le=20, description="Maximum number of results to return (1-20)."
     )
@@ -66,10 +81,19 @@ class KeenableToolsGroupConfig(FunctionGroupBaseConfig, name="keenable"):
     )
 
 
+def clean_objective(objective: str | None) -> str | None:
+    """Trim ``objective``; blank means not sent.
+
+    The ranker scores "{query} (task: {objective})"; retrieval reads only the query.
+    """
+    return (objective or "").strip() or None
+
+
 _SEARCH_DESCRIPTION = (
     "Search the web with Keenable for up-to-date information. Returns ranked results "
     "(title, url, description, and publication/index dates). Supports filtering by site "
-    "and date. Keyless by default."
+    "and date, and an optional objective that states what the search is for. "
+    "Keyless by default."
 )
 _FETCH_DESCRIPTION = (
     "Fetch a web page via Keenable and return its main content as clean markdown, along "
@@ -94,6 +118,7 @@ async def keenable_tools(
             published_before=value.published_before,
             acquired_after=value.acquired_after,
             acquired_before=value.acquired_before,
+            objective=clean_objective(value.objective),
         )
         results = data.get("results", []) if isinstance(data, dict) else []
         if value.max_results is not None:

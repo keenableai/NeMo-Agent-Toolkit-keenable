@@ -12,6 +12,7 @@ from nat.plugins.keenable._client import resolve_api_key
 from nat.plugins.keenable.tools import KeenableFetchInput
 from nat.plugins.keenable.tools import KeenableSearchInput
 from nat.plugins.keenable.tools import KeenableToolsGroupConfig
+from nat.plugins.keenable.tools import clean_objective
 
 
 def test_package_entry_point_loads_keenable_plugin():
@@ -37,7 +38,7 @@ def test_resolve_api_key_prefers_config_then_env(monkeypatch):
 def test_search_input_schema_fields():
     fields = KeenableSearchInput.model_fields
     assert "query" in fields
-    assert {"site", "published_after", "max_results"} <= set(fields)
+    assert {"site", "published_after", "objective", "max_results"} <= set(fields)
     assert "url" in KeenableFetchInput.model_fields
 
 
@@ -88,3 +89,25 @@ async def test_search_raises_on_error_status():
     client = KeenableClient(api_key="", transport=httpx.MockTransport(handler))
     with pytest.raises(httpx.HTTPStatusError):
         await client.search("q")
+
+
+def test_clean_objective_trims_and_drops_blank():
+    assert clean_objective("  Find the 2026 figure.  ") == "Find the 2026 figure."
+    assert clean_objective(None) is None
+    assert clean_objective("") is None
+    assert clean_objective("   ") is None
+
+
+async def test_search_sends_objective_only_when_given():
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        import json
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json={"query": "q", "results": []})
+
+    client = KeenableClient(api_key="", transport=httpx.MockTransport(handler))
+    await client.search("q", objective=clean_objective("  why  "))
+    await client.search("q", objective=clean_objective("   "))
+    assert seen[0]["objective"] == "why"
+    assert "objective" not in seen[1]
