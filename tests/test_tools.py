@@ -111,3 +111,9 @@ async def test_search_sends_objective_only_when_given():
     await client.search("q", objective=clean_objective("   "))
     assert seen[0]["objective"] == "why"
     assert "objective" not in seen[1]
+
+
+def test_clean_objective_rejects_over_limit():
+    with pytest.raises(ValueError, match="1000"):
+        clean_objective("x" * 1001)
+    assert len(clean_objective(" " + "x" * 1000 + " ")) == 1000
