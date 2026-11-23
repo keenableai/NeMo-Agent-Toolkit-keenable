@@ -99,7 +99,8 @@ _SEARCH_DESCRIPTION = (
     "Search the web with Keenable for up-to-date information. Returns ranked results "
     "(title, url, description, and publication/index dates). Supports filtering by site "
     "and date, and an optional objective that states what the search is for. "
-    "Keyless by default."
+    "Keenable ranks results by query and objective together, but retrieval reads only "
+    "the query, so put the key search terms in query. Keyless by default."
 )
 _FETCH_DESCRIPTION = (
     "Fetch a web page via Keenable and return its main content as clean markdown, along "
