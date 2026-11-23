@@ -76,11 +76,25 @@ class KeenableClient:
             return resp.json()
 
     async def fetch(self, url: str) -> dict:
-        """GET a page as clean markdown. Keyless unless an API key is set."""
+        """POST one URL to /v1/fetch and return its page. Keyless unless an API key is set."""
         path = "/v1/fetch" if self._api_key else "/v1/fetch/public"
         async with self._client() as client:
-            resp = await client.get(
-                f"{KEENABLE_BASE_URL}{path}", params={"url": url}, headers=self._headers(False)
+            resp = await client.post(
+                f"{KEENABLE_BASE_URL}{path}", json={"urls": [url]}, headers=self._headers(True)
             )
             resp.raise_for_status()
-            return resp.json()
+            results = resp.json().get("results")
+        page = results[0] if isinstance(results, list) and results else None
+        if not isinstance(page, dict):
+            raise ValueError("Keenable returned no page for the URL")
+        error = page.get("error")
+        if isinstance(error, dict):
+            # A page that failed comes back as a 200 with the error on its entry; raise
+            # it as the same HTTPStatusError a failed single-page request raises.
+            status = error.get("status") if isinstance(error.get("status"), int) else 500
+            request = httpx.Request("POST", f"{KEENABLE_BASE_URL}{path}")
+            response = httpx.Response(status, json=error, request=request)
+            raise httpx.HTTPStatusError(
+                f"Keenable could not fetch {url!r} ({status})", request=request, response=response
+            )
+        return page
