@@ -26,7 +26,7 @@ function_groups:
 
 This exposes the tools `keenable__search` and `keenable__fetch`.
 
-- **`keenable__search`**: web search. Args: `query` (required), optional `site`, `published_after` / `published_before`, `acquired_after` / `acquired_before` (YYYY-MM-DD), `objective` (at most 1,000 characters: two or three natural sentences on what the search is for; blank values are not sent. Keenable ranks results by `query` and `objective` together; retrieval reads only `query`, so put the words that matter in `query`.), `max_results` (1-20). Returns `{ query, results: [{ title, url, description, published_at, acquired_at }] }`.
+- **`keenable__search`**: web search. Args: `query` (required), optional `site`, `published_after` / `published_before`, `acquired_after` / `acquired_before` (YYYY-MM-DD), `objective` (at most 1,000 characters: what the search is for: what the query leaves out and what earlier searches found, for multi-step or ambiguous questions; blank values are not sent. Keenable ranks results by `query` and `objective` together; retrieval reads only `query`, so put the words that matter in `query`.), `max_results` (1-20). Returns `{ query, results: [{ title, url, description, published_at, acquired_at }] }`.
 - **`keenable__fetch`**: fetch a URL as clean markdown. Args: `url`. Returns `{ url, title, content, description, author, published_at }`.
 
 ## Configuration
