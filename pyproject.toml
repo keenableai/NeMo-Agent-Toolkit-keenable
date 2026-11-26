@@ -10,7 +10,7 @@ packages = ["src/nat"]
 
 [project]
 name = "nemo-agent-toolkit-keenable"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.11,<3.14"
 description = "Keenable web search integration for NVIDIA NeMo Agent Toolkit (keyless by default)"
 readme = "README.md"

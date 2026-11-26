@@ -38,6 +38,17 @@ class KeenableSearchInput(BaseModel):
     acquired_before: str | None = Field(
         default=None, description="Only pages indexed on or before this date (YYYY-MM-DD)."
     )
+    objective: str | None = Field(
+        default=None,
+        description=(
+            "Optional. Use for multi-step or ambiguous searches; omit for "
+            "simple lookups. In one to three plain sentences, say what the "
+            "search is for, what the query leaves out (who, where, when, which "
+            "sources count) and what earlier searches found. Don't restate the "
+            "question or include personal or confidential details. At most "
+            "1,000 characters."
+        ),
+    )
     max_results: int | None = Field(
         default=None, ge=1, le=20, description="Maximum number of results to return (1-20)."
     )
@@ -66,10 +77,30 @@ class KeenableToolsGroupConfig(FunctionGroupBaseConfig, name="keenable"):
     )
 
 
+MAX_OBJECTIVE_CHARS = 1000
+
+
+def clean_objective(objective: str | None) -> str | None:
+    """Trim ``objective``; blank means not sent; over 1,000 characters is rejected.
+
+    Ranking uses query and objective together; retrieval reads only the query.
+    """
+    cleaned = (objective or "").strip()
+    if len(cleaned) > MAX_OBJECTIVE_CHARS:
+        msg = (
+            f"objective is {len(cleaned)} characters; the limit is "
+            f"{MAX_OBJECTIVE_CHARS}. Shorten it to two or three sentences."
+        )
+        raise ValueError(msg)
+    return cleaned or None
+
+
 _SEARCH_DESCRIPTION = (
     "Search the web with Keenable for up-to-date information. Returns ranked results "
     "(title, url, description, and publication/index dates). Supports filtering by site "
-    "and date. Keyless by default."
+    "and date, and an optional objective that states what the search is for. "
+    "Keenable ranks results by query and objective together, but retrieval reads only "
+    "the query, so put the key search terms in query. Keyless by default."
 )
 _FETCH_DESCRIPTION = (
     "Fetch a web page via Keenable and return its main content as clean markdown, along "
@@ -94,6 +125,7 @@ async def keenable_tools(
             published_before=value.published_before,
             acquired_after=value.acquired_after,
             acquired_before=value.acquired_before,
+            objective=clean_objective(value.objective),
         )
         results = data.get("results", []) if isinstance(data, dict) else []
         if value.max_results is not None:
