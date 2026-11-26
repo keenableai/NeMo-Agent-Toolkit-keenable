@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib.metadata
+import json
 
 import httpx
 import pytest
@@ -71,15 +72,40 @@ async def test_search_keyed_hits_auth_endpoint():
     await client.search("q")
 
 
-async def test_fetch_keyless_hits_public_endpoint():
+async def test_fetch_keyless_posts_to_public_endpoint():
     def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
         assert request.url.path == "/v1/fetch/public"
-        assert request.url.params.get("url") == "https://example.com/a"
-        return httpx.Response(200, json={"url": "https://example.com/a", "title": "T", "content": "# T"})
+        assert json.loads(request.content) == {"urls": ["https://example.com/a"]}
+        assert "X-API-Key" not in request.headers
+        return httpx.Response(
+            200, json={"results": [{"url": "https://example.com/a", "title": "T", "content": "# T"}]}
+        )
 
     client = KeenableClient(api_key="", transport=httpx.MockTransport(handler))
     page = await client.fetch("https://example.com/a")
     assert page["title"] == "T"
+
+
+async def test_fetch_keyed_posts_to_auth_endpoint():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/v1/fetch"
+        assert request.headers["X-API-Key"] == "keen_test"
+        return httpx.Response(200, json={"results": [{"url": "https://example.com/a", "content": "x"}]})
+
+    client = KeenableClient(api_key="keen_test", transport=httpx.MockTransport(handler))
+    await client.fetch("https://example.com/a")
+
+
+async def test_fetch_page_error_raises_http_status_error():
+    def handler(request: httpx.Request) -> httpx.Response:
+        error = {"status": 404, "message": "page not found"}
+        return httpx.Response(200, json={"results": [{"url": "https://example.com/a", "error": error}]})
+
+    client = KeenableClient(api_key="", transport=httpx.MockTransport(handler))
+    with pytest.raises(httpx.HTTPStatusError) as exc:
+        await client.fetch("https://example.com/a")
+    assert exc.value.response.status_code == 404
 
 
 async def test_search_raises_on_error_status():
